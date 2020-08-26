@@ -36,12 +36,12 @@
 typedef struct listNode {
     struct listNode *prev;
     struct listNode *next;
-    void *value;
+    void *value; //数据 可以存放任何类型数据
 } listNode;
 
 typedef struct listIter {
     listNode *next;
-    int direction;
+    int direction; //迭代器遍历的方向 向后还是向前
 } listIter;
 
 typedef struct list {
@@ -50,10 +50,11 @@ typedef struct list {
     void *(*dup)(void *ptr);
     void (*free)(void *ptr);
     int (*match)(void *ptr, void *key);
-    unsigned long len;
+    unsigned long len; //链表长度
 } list;
 
 /* Functions implemented as macros */
+//一些方便操作和阅读代码的宏定义 比如获取节点的值、获取头尾节点、设置获取struct函数等
 #define listLength(l) ((l)->len)
 #define listFirst(l) ((l)->head)
 #define listLast(l) ((l)->tail)
@@ -70,31 +71,47 @@ typedef struct list {
 #define listGetMatchMethod(l) ((l)->match)
 
 /* Prototypes */
+//双端链表创建、释放、清空
 list *listCreate(void);
-void listRelease(list *list);
+void listRelease(list *list); //先调用listEmpty 然后释放list空间
 void listEmpty(list *list);
 
 //加入到头部、尾部、中间
 list *listAddNodeHead(list *list, void *value);
 list *listAddNodeTail(list *list, void *value);
+ //after为true 则插入到后面，否则插入到前面
 list *listInsertNode(list *list, listNode *old_node, void *value, int after);
 
-//删除
-void listDelNode(list *list, listNode *node);
-listIter *listGetIterator(list *list, int direction);
-listNode *listNext(listIter *iter);
-void listReleaseIterator(listIter *iter);
-list *listDup(list *orig);
-listNode *listSearchKey(list *list, void *key);
-listNode *listIndex(list *list, long index);
-void listRewind(list *list, listIter *li);
-void listRewindTail(list *list, listIter *li);
-void listRotateTailToHead(list *list);
-void listRotateHeadToTail(list *list);
-void listJoin(list *l, list *o);
+void listDelNode(list *list, listNode *node);  //删除指定节点
+
+
+//-------------迭代器--------------------
+listIter *listGetIterator(list *list, int direction);//创建链表迭代器，从头、尾开始都可
+listNode *listNext(listIter *iter); //获取迭代的下一个节点
+void listReleaseIterator(listIter *iter); //释放迭代器
+
+
+list *listDup(list *orig);//复制整个链表 返回复制后的地址
+listNode *listSearchKey(list *list, void *key); //根据key搜索相同值得节点 head开始
+listNode *listIndex(list *list, long index); //获取指定位置的节点 0代表第一个节点 支持负索引 -1代表倒数第一个
+
+
+void listRewind(list *list, listIter *li); //将li迭代器重置到head节点
+void listRewindTail(list *list, listIter *li); //重置到tail节点
+
+
+//链表反转
+void listRotateTailToHead(list *list);  //tail->head 左转
+void listRotateHeadToTail(list *list);  //head->tail 右转
+
+
+void listJoin(list *l, list *o);//链表连接 o 链接到 l 链表上
+
+
 
 /* Directions for iterators */
-#define AL_START_HEAD 0
+//迭代器方向的宏定义
+#define AL_START_HEAD 0 
 #define AL_START_TAIL 1
 
 #endif /* __ADLIST_H__ */
