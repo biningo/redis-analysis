@@ -101,8 +101,8 @@ void listRewindTail(list *list, listIter *li); //重置到tail节点
 
 
 //链表反转
-void listRotateTailToHead(list *list);  //tail->head 左转
-void listRotateHeadToTail(list *list);  //head->tail 右转
+void listRotateTailToHead(list *list);  //将尾部节点插入到头部 然后更新head
+void listRotateHeadToTail(list *list);  //将头部节点插入到尾部 然后更新tail
 
 
 void listJoin(list *l, list *o);//链表连接 o 链接到 l 链表上
