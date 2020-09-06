@@ -111,17 +111,18 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #define DICT_HT_INITIAL_SIZE     4
 
 /* ------------------------------- Macros ------------------------------------*/
+//释放节点
 #define dictFreeVal(d, entry) \
     if ((d)->type->valDestructor) \
         (d)->type->valDestructor((d)->privdata, (entry)->v.val)
-
+//设置节点的值val
 #define dictSetVal(d, entry, _val_) do { \
     if ((d)->type->valDup) \
         (entry)->v.val = (d)->type->valDup((d)->privdata, _val_); \
     else \
         (entry)->v.val = (_val_); \
 } while(0)
-
+//设置string、int、float类型的值
 #define dictSetSignedIntegerVal(entry, _val_) \
     do { (entry)->v.s64 = _val_; } while(0)
 
@@ -131,10 +132,12 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #define dictSetDoubleVal(entry, _val_) \
     do { (entry)->v.d = _val_; } while(0)
 
+//释放节点key的空间
 #define dictFreeKey(d, entry) \
     if ((d)->type->keyDestructor) \
         (d)->type->keyDestructor((d)->privdata, (entry)->key)
 
+//设置节点的key
 #define dictSetKey(d, entry, _key_) do { \
     if ((d)->type->keyDup) \
         (entry)->key = (d)->type->keyDup((d)->privdata, _key_); \
@@ -142,6 +145,7 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
         (entry)->key = (_key_); \
 } while(0)
 
+//比较两个key
 #define dictCompareKeys(d, key1, key2) \
     (((d)->type->keyCompare) ? \
         (d)->type->keyCompare((d)->privdata, key1, key2) : \
@@ -158,60 +162,90 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #define dictIsRehashing(d) ((d)->rehashidx != -1)
 
 /* API */
+//创建dict  默认HashTable设置为4
 dict *dictCreate(dictType *type, void *privDataPtr);
-
-//hash table大小扩容
+//调整HashTable大小
 int dictExpand(dict *d, unsigned long size);
 
 
 //添加kv到字典
 int dictAdd(dict *d, void *key, void *val);
-//根据key判断是否在HashTable中，在则返回NULL，否则返回插入后的dictEntry 
-//这里第3个字段exisiing带出来的是如果发生hash碰撞时的节点，方便插入到后面的链表中
-//这个函数暂时用不到existing这个字段
-dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);
-//查找key，如果不存在则添加到dict中，并且返回插入后的节点，  否则返回发生冲突的节点
-dictEntry *dictAddOrFind(dict *d, void *key);
 
+//根据key判断是否在HashTable中，在则返回NULL并且设置existing为冲突节点，否则返回插入后的dictEntry 
+//这里第3个字段exisiing带出来的是如果发生hash碰撞时的节点，方便插入到后面的链表中
+dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);
+
+//调用dictAddRaw查找key，如果不存在key则添加到dict中，并且返回插入后的节点
+//否则插入失败返回发生key对应的原来节点
+dictEntry *dictAddOrFind(dict *d, void *key);
 
 //添加kv 如果key已经存在 则用新值替换旧的值
 int dictReplace(dict *d, void *key, void *val);
 
-//删除指定的kv
+
+//删除指定的kv 并且释放空间
 int dictDelete(dict *d, const void *key);
+//删除指定的kv 但是返回dictEntry节点 不释放空间
 dictEntry *dictUnlink(dict *ht, const void *key);
+//释放 dictEntry *he的空间
 void dictFreeUnlinkedEntry(dict *d, dictEntry *he);
 //释放dict以及所有的kv
 void dictRelease(dict *d);
 
+
 //查找key代表的 dictEntry节点 不存在返回NULL 
 dictEntry * dictFind(dict *d, const void *key);
-
 //根据key获取value
 void *dictFetchValue(dict *d, const void *key);
 
+//将dict中HashTable的大小调整为最小
+//但是 USED/BUCKETS 的比率要<= 1 调用dictExpand 实现
 int dictResize(dict *d);
+
+
+//dict迭代器
 dictIterator *dictGetIterator(dict *d);
 dictIterator *dictGetSafeIterator(dict *d);
 dictEntry *dictNext(dictIterator *iter);
 void dictReleaseIterator(dictIterator *iter);
 
+
 //随机返回一个键值对
 dictEntry *dictGetRandomKey(dict *d);
+//在dictGetRandomKey 基础上做到更好的分散和随机性 减少重复
 dictEntry *dictGetFairRandomKey(dict *d);
+//返回指定count数目的kv 存储在des中
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count);
+
 void dictGetStats(char *buf, size_t bufsize, dict *d);
+
+//生成hash值
 uint64_t dictGenHashFunction(const void *key, int len);
 uint64_t dictGenCaseHashFunction(const unsigned char *buf, int len);
+
+//清空dict
 void dictEmpty(dict *d, void(callback)(void*));
+
+//设置dict 能否resize  就是设置dict_can_resize 标识位  1表示能 0表示不能
 void dictEnableResize(void);
 void dictDisableResize(void);
+
+//开始rehash 传入n表示rehash的kv次数 
 int dictRehash(dict *d, int n);
 int dictRehashMilliseconds(dict *d, int ms);
+
+//设置HashSeed 和获取 HashSeed
 void dictSetHashFunctionSeed(uint8_t *seed);
 uint8_t *dictGetHashFunctionSeed(void);
+
+
 unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, dictScanBucketFunction *bucketfn, void *privdata);
+
+
+//调用dictHashKey 来计算key的hash值 (仅仅是调用函数计算)
 uint64_t dictGetHash(dict *d, const void *key);
+
+
 dictEntry **dictFindEntryRefByPtrAndHash(dict *d, const void *oldptr, uint64_t hash);
 
 /* Hash table types */
