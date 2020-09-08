@@ -28,23 +28,34 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+//整数集合：当一个set只包含数值类型，并且元素个数不多时使用
+
 #ifndef __INTSET_H
 #define __INTSET_H
 #include <stdint.h>
 
 typedef struct intset {
-    uint32_t encoding;
-    uint32_t length;
-    int8_t contents[];
+    uint32_t encoding; //编码方式 也就是保存什么类型的数据int16/32/64
+    uint32_t length; //元素个数
+    // size= int16*length  int32*length
+    int8_t contents[]; //保存实际数据的数组 数据类型根据最大元素的类型来申请内存数组
 } intset;
 
+//创建intset 不会预先分配contents大小 初始化为0  后面插入一个resize一下
 intset *intsetNew(void);
+//添加元素
 intset *intsetAdd(intset *is, int64_t value, uint8_t *success);
+//移出元素
 intset *intsetRemove(intset *is, int64_t value, int *success);
+//查找元素
 uint8_t intsetFind(intset *is, int64_t value);
+//随机返回一个元素
 int64_t intsetRandom(intset *is);
+//根据索引获得元素
 uint8_t intsetGet(intset *is, uint32_t pos, int64_t *value);
+//获取intset的元素个数
 uint32_t intsetLen(const intset *is);
+//获取contents 数组的内存大小
 size_t intsetBlobLen(intset *is);
 
 #ifdef REDIS_TEST
